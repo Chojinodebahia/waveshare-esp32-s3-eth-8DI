@@ -1,0 +1,286 @@
+substitutions:
+  device_name: wave-8r-1
+  device_friendly: Iluminación 1
+  device_ip: 10.10.10.10  # Cambiar por IP deseada 
+  device_gateway: 10.10.10.1  # Cambiar por IP del gateway
+  device_comment: "Waveshare"
+  
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly}
+  comment: ${device_comment}
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  baud_rate: 0 # TX y RX en IO17 IO18 están en uso para el Modbus/CAN
+
+# Enable Home Assistant API
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: !secret api_key_cryp
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+#### Configuración específica de la placa de relés ####
+# Componentes y pinout:
+# - Etherner W5500 SCI
+ethernet:
+  type: W5500
+  clk_pin: GPIO15
+  mosi_pin: GPIO13
+  miso_pin: GPIO14
+  cs_pin: GPIO16
+  interrupt_pin: GPIO12
+#  reset_pin: GPIOXX   # En principio no hay reset pin
+#  manual_ip: 
+#    static_ip: ${device_ip}
+#    gateway: ${device_gateway}
+#    subnet: 255.255.255.0
+web_server:
+  port: 80
+  auth:
+    username: !secret web_username
+    password: !secret web_password
+
+# - I2C https://esphome.io/components/i2c#i2c$0
+i2c:
+  sda: GPIO42
+  scl: GPIO41
+  scan: true
+#  frequency: 400khz  # El i2c del TCA9554PWR puede funcionar hasta a 400khz
+#  id: bus_i2c  # Pudiera ser necesario especificar un id del bus, el chip eth usa SPI
+
+# - Modbus RS485 https://esphome.io/components/modbus_controller.html$0
+#uart:
+#  - id: uart_modbus_server
+#    baud_rate: 115200
+#    tx_pin: 17
+#    rx_pin: 18
+
+#modbus:
+#  - uart_id: uart_modbus_server
+#    id: modbus_server
+#    role: server
+
+# - RTC Batt Time Source https://esphome.io/components/time/pcf85063.html$0
+#time:
+#  - platform: pcf85063
+#    id: time_clock
+
+# - Relés https://esphome.io/components/pca9554.html$0
+pca9554:
+  - id: reles_hub
+    pin_count: 8
+    address: 0x20
+
+# - Interruptores https://esphome.io/components/binary_sensor/gpio$0
+# Cambiar comportamiento del interruptor, una pulsación, dos, relé asociado...
+binary_sensor:
+### Botón RESET ###
+  - platform: gpio
+    pin:
+      number: GPIO0
+      inverted: False
+    id: reset_pin
+    filters: 
+      - delayed_on: 50ms
+    on_press: 
+      then:
+        - button.press: restart_button
+
+####  Entradas digitales  ###  Programadas para uso con pulsador
+
+  - platform: gpio
+    pin: 
+      number: GPIO4
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: input1
+    name: Pulsador 1
+    filters: 
+      - delayed_on: 30ms # Filtro para evitar falsos contactos
+#    interrupt_type: RISING # Uso para futuras actualizaciones
+    on_press:
+      - switch.toggle:
+          id: rele1
+  - platform: gpio
+    pin: 
+      number: GPIO5
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: input2
+    name: Pulsador 2
+    filters: 
+      - delayed_on: 30ms
+    on_press:
+      - switch.toggle:
+          id: rele2
+  - platform: gpio
+    pin: 
+      number: GPIO6
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: input3
+    name: Pulsador 3
+    filters: 
+      - delayed_on: 30ms
+    on_press:
+      - switch.toggle:
+          id: rele3
+  - platform: gpio
+    pin: 
+      number: GPIO7
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: input4
+    name: Pulsador 4
+    filters: 
+      - delayed_on: 30ms
+    on_press:
+      - switch.toggle:
+          id: rele4
+  - platform: gpio
+    pin: 
+      number: GPIO8
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: input5
+    name: Pulsador 5
+    filters: 
+      - delayed_on: 30ms
+    on_press:
+      - switch.toggle:
+          id: rele5
+  - platform: gpio
+    pin: 
+      number: GPIO9
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: input6
+    name: Pulsador 6
+    filters: 
+      - delayed_on: 30ms
+    on_press:
+      - switch.toggle:
+          id: rele6
+  - platform: gpio
+    pin: 
+      number: GPIO10
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: input7
+    name: Pulsador 7
+    filters: 
+      - delayed_on: 30ms
+    on_press:
+      - switch.toggle:
+          id: rele7
+  - platform: gpio
+    pin: 
+      number: GPIO11
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: input8
+    name: Pulsador 8
+    filters: 
+      - delayed_on: 30ms
+    on_press:
+      - switch.toggle:
+          id: rele8
+
+switch:
+  - platform: gpio
+    name: "Rele 1"
+    id: rele1
+    pin:
+      pca9554: reles_hub
+      number: 0
+      inverted: False
+      mode:
+        output: true
+  - platform: gpio
+    name: "Rele 2"
+    id: rele2
+    pin:
+      pca9554: reles_hub
+      number: 1
+  - platform: gpio
+    name: "Rele 3"
+    id: rele3
+    pin:
+      pca9554: reles_hub
+      number: 2
+  - platform: gpio
+    name: "Rele 4"
+    id: rele4
+    pin:
+      pca9554: reles_hub
+      number: 3
+  - platform: gpio
+    name: "Rele 5"
+    id: rele5
+    pin:
+      pca9554: reles_hub
+      number: 4
+  - platform: gpio
+    name: "Rele 6"
+    id: rele6
+    pin:
+      pca9554: reles_hub
+      number: 5
+  - platform: gpio
+    name: "Rele 7"
+    id: rele7
+    pin:
+      pca9554: reles_hub
+      number: 6
+  - platform: gpio
+    name: "Rele 8"
+    id: rele8
+    pin:
+      pca9554: reles_hub
+      number: 7
+
+button:
+  - platform: restart
+    id: restart_button
+    name: ${device_name} restart
+
+output:
+  - platform: ledc
+    pin: GPIO46
+    id: buzzer
+
+light:
+  - platform: esp32_rmt_led_strip
+#    rmt_channel: 0 # Borrar channel a partir de la actualizacion de ESPHOME
+    num_leds: 1
+    chipset: WS2812
+    rgb_order: BGR
+    pin: GPIO38
+    id: led
+    name: onboard_led
